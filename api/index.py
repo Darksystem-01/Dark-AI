@@ -119,10 +119,5 @@ def get_image():
         return jsonify({"error": "No prompt provided"}), 400
     return jsonify({"url": f"{POLLINATIONS_IMAGE_API}{urllib.parse.quote(prompt)}?width=800&height=800&nologo=true"})
 
-@app.route('/', defaults={'path': ''}, methods=['GET', 'POST'])
-@app.route('/<path:path>', methods=['GET', 'POST'])
-def catch_all(path):
-    return jsonify({"status": "Backend Active", "path": path})
-
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)
