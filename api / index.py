@@ -98,7 +98,6 @@ def chat():
             POLLINATIONS_TEXT_API,
             json={
                 "messages": messages,
-                "model": "qwen", # Use Qwen on pollinations to avoid GPT-4 identity bias
                 "stream": True,
                 "seed": 42
             },
@@ -124,10 +123,21 @@ def chat():
                                 delta = json_data["choices"][0].get("delta", {})
                                 content = delta.get("content", "")
                                 if content:
+                                    content = content.replace("OpenAI", "Darksystem")
+                                    content = content.replace("ChatGPT", "Dark AI")
+                                    content = content.replace("GPT-4", "Dark AI")
+                                    content = content.replace("GPT-3", "Dark AI")
+                                    content = content.replace("GPT", "Dark AI")
+                                    content = content.replace("openai", "darksystem")
+                                    content = content.replace("chatgpt", "dark ai")
                                     yield content
                         except Exception as e:
                             pass
                     elif not decoded.startswith(":") and not decoded.startswith("event:"):
+                        decoded = decoded.replace("OpenAI", "Darksystem")
+                        decoded = decoded.replace("ChatGPT", "Dark AI")
+                        decoded = decoded.replace("GPT-4", "Dark AI")
+                        decoded = decoded.replace("GPT", "Dark AI")
                         yield decoded + "\n"
 
         return Response(stream_with_context(generate()), mimetype='text/plain')
