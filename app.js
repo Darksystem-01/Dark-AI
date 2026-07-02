@@ -88,7 +88,16 @@ initHeroAnimation();
 const renderer = new marked.Renderer();
 
 // Custom code block renderer to add Copy buttons
-renderer.code = function(code, lang, escaped) {
+renderer.code = function(code_or_token, lang_opt, escaped_opt) {
+    let code, lang;
+    if (typeof code_or_token === 'object' && code_or_token !== null) {
+        code = code_or_token.text;
+        lang = code_or_token.lang;
+    } else {
+        code = code_or_token;
+        lang = lang_opt;
+    }
+    
     const validLang = !!(lang && hljs.getLanguage(lang));
     const languageClass = validLang ? `language-${lang}` : 'language-plaintext';
     const highlightedCode = validLang ? hljs.highlight(code, { language: lang }).value : escapeHTML(code);
@@ -134,6 +143,9 @@ window.copyCode = function(btn, encodedCode) {
 };
 
 function formatContent(text) {
+    if (typeof text !== 'string') {
+        return "";
+    }
     let html = text;
     const imgRegex = /\[IMAGE:\s*(.*?)\]/g;
     html = html.replace(imgRegex, (match, prompt) => {
@@ -219,6 +231,13 @@ function renderMessage(role, content, animate = true) {
         const actionBar = document.createElement('div');
         actionBar.className = 'message-actions';
         
+        // Add timestamp
+        const timeSpan = document.createElement('span');
+        timeSpan.className = 'message-time';
+        const now = new Date();
+        timeSpan.textContent = now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0');
+        actionBar.appendChild(timeSpan);
+
         // Copy Button
         const copyBtn = document.createElement('button');
         copyBtn.className = 'action-icon-btn';
@@ -314,6 +333,14 @@ async function sendMessage() {
         // Add action bar dynamically to this finished message
         const actionBar = document.createElement('div');
         actionBar.className = 'message-actions';
+        
+        // Add timestamp
+        const timeSpan = document.createElement('span');
+        timeSpan.className = 'message-time';
+        const now = new Date();
+        timeSpan.textContent = now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0');
+        actionBar.appendChild(timeSpan);
+
         const copyBtn = document.createElement('button');
         copyBtn.className = 'action-icon-btn';
         copyBtn.innerHTML = `<svg viewBox="0 0 24 24"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg> <span>Copy</span>`;
