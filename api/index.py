@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, Response, stream_with_context, send_from_directory
+from flask import Flask, request, jsonify, Response, stream_with_context
 import requests
 import json
 import urllib.parse
@@ -119,28 +119,37 @@ def get_image():
         return jsonify({"error": "No prompt provided"}), 400
     return jsonify({"url": f"{POLLINATIONS_IMAGE_API}{urllib.parse.quote(prompt)}?width=800&height=800&nologo=true"})
 
-# --- VERCEL XATOLIKLARIGA QARSHI SUPER HIMOYA ---
-# Vercel adashib asosiy sahifa yoki css/js so'rab qolsa ham Python to'g'ri faylni topib beradi!
-def get_root_dir():
-    if os.path.exists('index.html'):
-        return '.'
-    elif os.path.exists('../index.html'):
-        return '..'
-    return '.'
-
+# --- VERCEL BLOKIROVKASINI BUZIB O'TUVCHI KOD ---
 @app.route('/')
 def serve_index():
-    root = get_root_dir()
-    if os.path.exists(os.path.join(root, 'index.html')):
-        return send_from_directory(root, 'index.html')
-    return "Asosiy fayl (index.html) topilmadi. GitHubda fayl borligini tekshiring.", 404
+    try:
+        paths = ['index.html', '../index.html', '/var/task/index.html']
+        for p in paths:
+            if os.path.exists(p):
+                with open(p, 'r', encoding='utf-8') as f:
+                    return f.read()
+        return "Dizayn topilmadi! Vercel blokladi.", 404
+    except Exception as e:
+        return f"Xatolik: {e}"
 
 @app.route('/<path:filename>')
 def serve_static(filename):
-    root = get_root_dir()
-    if os.path.exists(os.path.join(root, filename)):
-        return send_from_directory(root, filename)
-    return "Not Found", 404
+    try:
+        paths = [filename, f"../{filename}", f"/var/task/{filename}"]
+        for p in paths:
+            if os.path.exists(p):
+                with open(p, 'rb') as f:
+                    content = f.read()
+                
+                if filename.endswith('.css'): return Response(content, mimetype='text/css')
+                elif filename.endswith('.js'): return Response(content, mimetype='application/javascript')
+                elif filename.endswith('.jpg'): return Response(content, mimetype='image/jpeg')
+                elif filename.endswith('.png'): return Response(content, mimetype='image/png')
+                return Response(content, mimetype='text/plain')
+                
+        return "Fayl topilmadi!", 404
+    except Exception as e:
+        return f"Xatolik: {e}"
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)
