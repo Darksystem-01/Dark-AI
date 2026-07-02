@@ -120,6 +120,7 @@ def get_image():
     return jsonify({"url": f"{POLLINATIONS_IMAGE_API}{urllib.parse.quote(prompt)}?width=800&height=800&nologo=true"})
 
 # --- VERCEL XATOLIKLARIGA QARSHI SUPER HIMOYA ---
+# Vercel adashib asosiy sahifa yoki css/js so'rab qolsa ham Python to'g'ri faylni topib beradi!
 def get_root_dir():
     if os.path.exists('index.html'):
         return '.'
