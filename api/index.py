@@ -1,8 +1,9 @@
-from flask import Flask, request, jsonify, Response, stream_with_context
+from flask import Flask, request, jsonify, Response, stream_with_context, send_from_directory
 import requests
 import json
 import urllib.parse
 from bs4 import BeautifulSoup
+import os
 
 app = Flask(__name__)
 
@@ -98,7 +99,6 @@ def chat():
                             if "choices" in json_data and len(json_data["choices"]) > 0:
                                 content = json_data["choices"][0].get("delta", {}).get("content", "")
                                 if content:
-                                    # Qat'iy OpenAI filtratsiyasi
                                     content = content.replace("OpenAI", "Darksystem").replace("ChatGPT", "Dark AI").replace("GPT-4", "Dark AI").replace("GPT-3", "Dark AI").replace("GPT", "Dark AI").replace("openai", "darksystem").replace("chatgpt", "dark ai")
                                     yield content
                         except Exception:
@@ -118,6 +118,28 @@ def get_image():
     if not prompt:
         return jsonify({"error": "No prompt provided"}), 400
     return jsonify({"url": f"{POLLINATIONS_IMAGE_API}{urllib.parse.quote(prompt)}?width=800&height=800&nologo=true"})
+
+# --- VERCEL XATOLIKLARIGA QARSHI SUPER HIMOYA ---
+def get_root_dir():
+    if os.path.exists('index.html'):
+        return '.'
+    elif os.path.exists('../index.html'):
+        return '..'
+    return '.'
+
+@app.route('/')
+def serve_index():
+    root = get_root_dir()
+    if os.path.exists(os.path.join(root, 'index.html')):
+        return send_from_directory(root, 'index.html')
+    return "Asosiy fayl (index.html) topilmadi. GitHubda fayl borligini tekshiring.", 404
+
+@app.route('/<path:filename>')
+def serve_static(filename):
+    root = get_root_dir()
+    if os.path.exists(os.path.join(root, filename)):
+        return send_from_directory(root, filename)
+    return "Not Found", 404
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)
