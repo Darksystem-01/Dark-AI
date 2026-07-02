@@ -464,6 +464,16 @@ button.send-btn.hidden { display: none; }
     0%, 80%, 100% { transform: scale(0); opacity: 0.5; }
     40% { transform: scale(1); opacity: 1; }
 }
+/* Vaqt dizayni */
+.message-time {
+    font-size: 0.7rem;
+    color: rgba(255, 255, 255, 0.4);
+    display: flex;
+    align-items: center;
+    padding-left: 8px;
+    margin-right: auto;
+}
+.message-wrapper.user .message-time { margin-left: auto; margin-right: 0; padding-left: 0; padding-right: 8px; }
 
 ::-webkit-scrollbar { width: 8px; }
 ::-webkit-scrollbar-track { background: transparent; }
