@@ -2,9 +2,7 @@ from flask import Flask, request, jsonify, Response, stream_with_context
 import requests
 import json
 import urllib.parse
-from duckduckgo_search import DDGS
 from bs4 import BeautifulSoup
-import re
 
 app = Flask(__name__)
 
@@ -33,33 +31,25 @@ Think deeply about the implications, explore different angles, and provide a com
 Your goal is maximum accuracy, logic, and depth. Provide a long, well-reasoned response.
 """
 
-def fetch_page_text(url, max_chars=1500):
-    try:
-        resp = requests.get(url, timeout=3, headers={"User-Agent": "Mozilla/5.0"})
-        soup = BeautifulSoup(resp.text, "html.parser")
-        for tag in soup(["script", "style", "nav", "footer", "header"]):
-            tag.decompose()
-        text = " ".join(soup.stripped_strings)
-        return text[:max_chars]
-    except:
-        return ""
-
 def search_web(query):
     context_parts = []
     try:
-        with DDGS() as ddgs:
-            results = list(ddgs.text(query, max_results=3))
-            for res in results:
-                title = res.get("title", "")
-                href = res.get("href", "")
-                body = res.get("body", "")
-                context_parts.append(f"Title: {title}\nURL: {href}\nSnippet: {body}")
+        headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
+        url = f"https://www.bing.com/search?q={urllib.parse.quote(query)}"
+        resp = requests.get(url, headers=headers, timeout=5)
+        soup = BeautifulSoup(resp.text, "html.parser")
         
+        for li in soup.find_all('li', class_='b_algo', limit=3):
+            title = li.find('h2')
+            snippet = li.find('p')
+            if title and snippet:
+                context_parts.append(f"Title: {title.text.strip()}\nSnippet: {snippet.text.strip()}")
         return "\n\n".join(context_parts)
-    except:
+    except Exception:
         return ""
 
 @app.route('/api/chat', methods=['POST'])
+@app.route('/chat', methods=['POST'])
 def chat():
     data = request.json
     messages = data.get('messages', [])
@@ -75,32 +65,21 @@ def chat():
         system_msg += "\n" + get_deepthink_prompt()
 
     if use_search:
-        last_user_msg = ""
-        for m in reversed(messages):
-            if m.get("role") == "user":
-                last_user_msg = m.get("content", "")
-                break
-        
+        last_user_msg = next((m.get("content", "") for m in reversed(messages) if m.get("role") == "user"), "")
         if last_user_msg:
             web_results = search_web(last_user_msg)
             if web_results:
-                system_msg += f"\n\nHere are real-time web search results for the user's query to help you answer accurately:\n{web_results}\nUse this information if it is relevant."
+                system_msg += f"\n\nHere are real-time web search results for the user's query to help you answer accurately:\n{web_results}"
 
-    # Update or insert system prompt
     if messages[0].get('role') != 'system':
         messages.insert(0, {"role": "system", "content": system_msg})
     else:
         messages[0]["content"] = system_msg
 
     try:
-        # We enforce a specific model name to help avoid OpenAI hallucination from Pollinations defaults
         resp = requests.post(
             POLLINATIONS_TEXT_API,
-            json={
-                "messages": messages,
-                "stream": True,
-                "seed": 42
-            },
+            json={"messages": messages, "stream": True, "seed": 42},
             stream=True,
             timeout=40
         )
@@ -112,33 +91,20 @@ def chat():
             for chunk in resp.iter_lines():
                 if chunk:
                     decoded = chunk.decode('utf-8').strip()
-                    
                     if decoded.startswith("data: "):
-                        if decoded == "data: [DONE]":
-                            break
+                        if decoded == "data: [DONE]": break
                         try:
-                            json_str = decoded[6:]
-                            json_data = json.loads(json_str)
+                            json_data = json.loads(decoded[6:])
                             if "choices" in json_data and len(json_data["choices"]) > 0:
-                                delta = json_data["choices"][0].get("delta", {})
-                                content = delta.get("content", "")
+                                content = json_data["choices"][0].get("delta", {}).get("content", "")
                                 if content:
-                                    # Qattiq filtr
-                                    content = content.replace("OpenAI", "Darksystem")
-                                    content = content.replace("ChatGPT", "Dark AI")
-                                    content = content.replace("GPT-4", "Dark AI")
-                                    content = content.replace("GPT-3", "Dark AI")
-                                    content = content.replace("GPT", "Dark AI")
-                                    content = content.replace("openai", "darksystem")
-                                    content = content.replace("chatgpt", "dark ai")
+                                    # Qat'iy OpenAI filtratsiyasi
+                                    content = content.replace("OpenAI", "Darksystem").replace("ChatGPT", "Dark AI").replace("GPT-4", "Dark AI").replace("GPT-3", "Dark AI").replace("GPT", "Dark AI").replace("openai", "darksystem").replace("chatgpt", "dark ai")
                                     yield content
-                        except Exception as e:
+                        except Exception:
                             pass
                     elif not decoded.startswith(":") and not decoded.startswith("event:"):
-                        decoded = decoded.replace("OpenAI", "Darksystem")
-                        decoded = decoded.replace("ChatGPT", "Dark AI")
-                        decoded = decoded.replace("GPT-4", "Dark AI")
-                        decoded = decoded.replace("GPT", "Dark AI")
+                        decoded = decoded.replace("OpenAI", "Darksystem").replace("ChatGPT", "Dark AI").replace("GPT-4", "Dark AI").replace("GPT", "Dark AI")
                         yield decoded + "\n"
 
         return Response(stream_with_context(generate()), mimetype='text/plain')
@@ -146,15 +112,17 @@ def chat():
         return jsonify({"error": str(e)}), 500
 
 @app.route('/api/image', methods=['GET'])
+@app.route('/image', methods=['GET'])
 def get_image():
     prompt = request.args.get('prompt', '')
     if not prompt:
         return jsonify({"error": "No prompt provided"}), 400
-    
-    encoded_prompt = urllib.parse.quote(prompt)
-    image_url = f"{POLLINATIONS_IMAGE_API}{encoded_prompt}?width=800&height=800&nologo=true"
-    
-    return jsonify({"url": image_url})
+    return jsonify({"url": f"{POLLINATIONS_IMAGE_API}{urllib.parse.quote(prompt)}?width=800&height=800&nologo=true"})
+
+@app.route('/', defaults={'path': ''}, methods=['GET', 'POST'])
+@app.route('/<path:path>', methods=['GET', 'POST'])
+def catch_all(path):
+    return jsonify({"status": "Backend Active", "path": path})
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)
