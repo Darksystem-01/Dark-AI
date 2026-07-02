@@ -2,19 +2,15 @@
   "version": 2,
   "builds": [
     {
-      "src": "api.py",
-      "use": "@vercel/python"
-    },
-    {
-      "src": "index.html",
-      "use": "@vercel/static"
-    },
-    {
-      "src": "style.css",
-      "use": "@vercel/static"
-    },
-    {
       "src": "app.js",
+      "use": "@vercel/static"
+    },
+    {
+      "src": "brain_bg.png",
+      "use": "@vercel/static"
+    },
+    {
+      "src": "dark_ai_logo.jpg",
       "use": "@vercel/static"
     }
   ],
@@ -22,10 +18,28 @@
     {
       "src": "/api/(.*)",
       "dest": "api.py"
+      "dest": "/api.py"
     },
     {
       "src": "/",
       "dest": "index.html"
+      "dest": "/index.html"
+    },
+    {
+      "src": "/style.css",
+      "dest": "/style.css"
+    },
+    {
+      "src": "/app.js",
+      "dest": "/app.js"
+    },
+    {
+      "src": "/brain_bg.png",
+      "dest": "/brain_bg.png"
+    },
+    {
+      "src": "/dark_ai_logo.jpg",
+      "dest": "/dark_ai_logo.jpg"
     }
   ]
 }
